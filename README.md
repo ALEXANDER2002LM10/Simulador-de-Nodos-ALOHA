@@ -6,7 +6,7 @@ La interfaz cuenta con soporte nativo para **Modo Claro** y **Modo Oscuro**, opt
 
 ---
 
-## ⛮ Características Principales
+## Características Principales
 
 * **Modelo de Canales Dinámicos:** Eliminación de estados ociosos (*idle*) para evaluar de manera crítica únicamente escenarios de rendimiento real bajo demanda constante.
 * **Diseño de Panel Dividido (Layout de 2 Columnas):** Panel izquierdo enfocado en la configuración de parámetros y monitorización de nodos en tiempo real; panel derecho dedicado al registro secuencial de eventos y métricas globales.
@@ -17,7 +17,7 @@ La interfaz cuenta con soporte nativo para **Modo Claro** y **Modo Oscuro**, opt
 
 ---
 
-## 📊 Parámetros de Simulación y Métricas
+## Parámetros de Simulación y Métricas
 
 El simulador computa y despliega de manera automática los siguientes indicadores de rendimiento al finalizar cada ejecución:
 
@@ -30,7 +30,7 @@ El simulador computa y despliega de manera automática los siguientes indicadore
 
 ---
 
-## 🛠️ Tecnologías Utilizadas
+## Tecnologías Utilizadas
 
 * **HTML5:** Estructuración semántica y accesibilidad garantizada mediante atributos `sr-only`.
 * **CSS3 (Grid, Flexbox y Variables):** Arquitectura responsiva de dos columnas con transiciones fluidas de color para la alternancia de temas.
