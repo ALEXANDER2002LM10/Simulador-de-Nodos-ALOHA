@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador ALOHA</title>
+<style>
+/* Variables de paleta de colores para ambos modos */
+:root {
+  --bg-page: #f8f9fa;
+  --bg-panel: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-input: #f3f4f6;
+  --border-color: #e5e7eb;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-tertiary: #6b7280;
+  --text-light: #9ca3af;
+  
+  /* Estados del protocolo */
+  --bg-ok: #ecfdf5;
+  --border-ok: #10b981;
+  --text-ok: #065f46;
+  
+  --bg-col: #fef2f2;
+  --border-col: #ef4444;
+  --text-col: #991b1b;
+
+  --primary-color: #185FA5;
+  --primary-hover: #0c447c;
+  --badge-bg: #e6f1fb;
+}
+
+[data-theme="dark"] {
+  --bg-page: #0f172a;
+  --bg-panel: #1e293b;
+  --bg-secondary: #334155;
+  --bg-input: #475569;
+  --border-color: #334155;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  --text-light: #64748b;
+  
+  /* Estados en modo oscuro */
+  --bg-ok: #064e3b;
+  --border-ok: #34d399;
+  --text-ok: #a7f3d0;
+  
+  --bg-col: #7f1d1d;
+  --border-col: #f87171;
+  --text-col: #fca5a5;
+
+  --primary-color: #38bdf8;
+  --primary-hover: #7dd3fc;
+  --badge-bg: #1e293b;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.app { 
+  max-width: 1200px; 
+  margin: 0 auto; 
+  padding: 2rem 1.5rem; 
+  position: relative;
+}
+
+/* Botón de alternancia de tema */
+.theme-toggle {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+}
+.theme-toggle:hover {
+  background: var(--bg-secondary);
+}
+
+.header { 
+  margin-bottom: 2rem; 
+  text-align: center;
+}
+.badge { 
+  display: inline-flex; 
+  align-items: center; 
+  gap: 6px; 
+  font-size: 11px; 
+  font-weight: 600; 
+  letter-spacing: 0.06em; 
+  text-transform: uppercase; 
+  padding: 6px 12px; 
+  border-radius: 20px; 
+  background: var(--badge-bg); 
+  color: var(--primary-color); 
+  margin-bottom: 12px; 
+}
+.title { 
+  font-size: 28px; 
+  font-weight: 600; 
+  color: var(--text-primary); 
+  line-height: 1.2; 
+}
+.subtitle { 
+  font-size: 15px; 
+  color: var(--text-tertiary); 
+  margin-top: 6px; 
+}
+
+/* Layout principal */
+.main-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .main-layout {
+    grid-template-columns: 1fr;
+  }
+  .theme-toggle {
+    position: static;
+    margin: 0 auto 1.5rem auto;
+    width: max-content;
+  }
+}
+
+.panel { 
+  background: var(--bg-panel); 
+  border: 1px solid var(--border-color); 
+  border-radius: 12px; 
+  padding: 1.5rem; 
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.left-column, .right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.nodes-row { 
+  display: flex; 
+  gap: 12px; 
+  margin-bottom: 0.5rem; 
+}
+.node-card { 
+  flex: 1; 
+  background: var(--bg-secondary); 
+  border-radius: 8px; 
+  padding: 14px; 
+  border: 1px solid var(--border-color); 
+  transition: all 0.2s ease; 
+}
+.node-card.active-ok { border-color: var(--border-ok); background: var(--bg-ok); }
+.node-card.active-col { border-color: var(--border-col); background: var(--bg-col); }
+
+.node-header { 
+  display: flex; 
+  align-items: center; 
+  gap: 8px; 
+  margin-bottom: 6px; 
+}
+.node-dot { width: 10px; height: 10px; border-radius: 50%; }
+.node-label { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+.node-status { 
+  font-size: 12px; 
+  color: var(--text-tertiary); 
+  font-family: monospace; 
+  font-weight: 500;
+}
+
+.controls-grid { 
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem; 
+  margin-top: 0.5rem;
+}
+.ctrl-group label { 
+  display: block; 
+  font-size: 13px; 
+  font-weight: 500; 
+  color: var(--text-secondary); 
+  margin-bottom: 6px; 
+  letter-spacing: 0.01em; 
+}
+.ctrl-row { 
+  display: flex; 
+  align-items: center; 
+  gap: 12px; 
+}
+.ctrl-row input[type=range] { 
+  flex: 1; 
+  accent-color: var(--primary-color);
+  cursor: pointer;
+}
+.ctrl-val { 
+  font-size: 14px; 
+  font-weight: 600; 
+  min-width: 40px; 
+  text-align: right; 
+  color: var(--text-primary); 
+  font-family: monospace; 
+  background: var(--bg-input);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Botón de simulación centrado */
+.btn-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+.btn-run { 
+  width: auto; 
+  min-width: 220px;
+  padding: 11px 24px; 
+  font-size: 14px; 
+  font-weight: 600; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  gap: 8px; 
+  border-radius: 8px; 
+  cursor: pointer; 
+  border: none; 
+  background: var(--primary-color); 
+  color: #ffffff; 
+  transition: background 0.15s, transform 0.1s, opacity 0.15s; 
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.btn-run:hover { background: var(--primary-hover); }
+.btn-run:active { transform: scale(0.98); }
+.btn-run:disabled { opacity: 0.6; cursor: not-allowed; }
+
+[data-theme="dark"] .btn-run {
+  color: #0f172a;
+}
+
+.metrics { 
+  display: grid; 
+  grid-template-columns: repeat(4, minmax(0, 1fr)); 
+  gap: 8px; 
+}
+.metric { 
+  background: var(--bg-secondary); 
+  border-radius: 8px; 
+  padding: 12px 6px; 
+  text-align: center; 
+  border: 1px solid var(--border-color);
+}
+.metric-val { 
+  font-size: 18px; 
+  font-weight: 600; 
+  font-family: monospace; 
+  color: var(--text-primary); 
+}
+.metric-val.ok { color: var(--border-ok); }
+.metric-val.col { color: var(--border-col); }
+.metric-lbl { 
+  font-size: 11px; 
+  color: var(--text-tertiary); 
+  margin-top: 4px; 
+  font-weight: 500;
+}
+
+.progress-bar { 
+  height: 6px; 
+  background: var(--border-color); 
+  border-radius: 3px; 
+  overflow: hidden; 
+}
+.progress-fill { 
+  height: 100%; 
+  border-radius: 3px; 
+  background: var(--primary-color); 
+  width: 0%; 
+  transition: width 0.2s ease; 
+}
+
+.log-header { 
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; 
+  margin-bottom: 12px; 
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+}
+.log-title { 
+  font-size: 13px; 
+  font-weight: 600; 
+  color: var(--text-secondary); 
+}
+.log-count { 
+  font-size: 11px; 
+  color: var(--text-light); 
+  font-family: monospace; 
+}
+
+.log-list { 
+  max-height: 320px; 
+  overflow-y: auto; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 4px; 
+  padding-right: 4px;
+}
+.log-row { 
+  display: grid; 
+  grid-template-columns: 48px 24px 24px 24px 1fr; 
+  align-items: center; 
+  gap: 6px; 
+  padding: 8px 10px; 
+  border-radius: 6px; 
+  font-size: 12px; 
+  font-family: monospace; 
+}
+.log-row.ok { background: var(--bg-ok); border-left: 3px solid var(--border-ok); }
+.log-row.col { background: var(--bg-col); border-left: 3px solid var(--border-col); }
+.log-slot { color: var(--text-tertiary); font-size: 11px; font-weight: 500; }
+.ndot { width: 8px; height: 8px; border-radius: 50%; justify-self: center; }
+.log-msg { font-size: 12px; display: flex; align-items: center; gap: 6px; font-weight: 500; }
+.log-msg.ok { color: var(--text-ok); }
+.log-msg.col { color: var(--text-col); }
+
+.empty-state { 
+  text-align: center; 
+  padding: 3rem 1rem; 
+  color: var(--text-light); 
+  font-size: 13px; 
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">
+    <span id="theme-icon">🌙</span> Modo Oscuro
+  </button>
+
+  <h2 class="sr-only">Simulador del protocolo ALOHA con 3 nodos</h2>
+
+  <div class="header">
+    <div class="badge">Protocolo ALOHA</div>
+    <div class="title">Simulador de Canal Compartido</div>
+    <div class="subtitle">3 nodos compitiendo en el mismo medio de transmisión</div>
+  </div>
+
+  <div class="main-layout">
+    <div class="left-column">
+      <div class="panel">
+        <div class="nodes-row">
+          <div class="node-card" id="nc1">
+            <div class="node-header">
+              <div class="node-dot" style="background:#185FA5"></div>
+              <span class="node-label">Nodo 1</span>
+            </div>
+            <div class="node-status" id="ns1">— en espera</div>
+          </div>
+          <div class="node-card" id="nc2">
+            <div class="node-header">
+              <div class="node-dot" style="background:#0F6E56"></div>
+              <span class="node-label">Nodo 2</span>
+            </div>
+            <div class="node-status" id="ns2">— en espera</div>
+          </div>
+          <div class="node-card" id="nc3">
+            <div class="node-header">
+              <div class="node-dot" style="background:#993556"></div>
+              <span class="node-label">Nodo 3</span>
+            </div>
+            <div class="node-status" id="ns3">— en espera</div>
+          </div>
+        </div>
+
+        <div class="controls-grid">
+          <div class="ctrl-group">
+            <label>Probabilidad de transmisión (p)</label>
+            <div class="ctrl-row">
+              <input type="range" id="prob" min="1" max="9" value="5" step="1">
+              <span class="ctrl-val" id="prob-out">0.5</span>
+            </div>
+          </div>
+          <div class="ctrl-group">
+            <label>Time-slots a simular</label>
+            <div class="ctrl-row">
+              <input type="range" id="slots" min="5" max="60" value="20" step="1">
+              <span class="ctrl-val" id="slots-out">20</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-container">
+          <button class="btn-run" id="btn-run" onclick="runSim()">
+            Iniciar simulación
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="right-column">
+      <div class="metrics">
+        <div class="metric"><div class="metric-val" id="m-total">—</div><div class="metric-lbl">Slots</div></div>
+        <div class="metric"><div class="metric-val ok" id="m-ok">—</div><div class="metric-lbl">Transmisiones exitosas</div></div>
+        <div class="metric"><div class="metric-val col" id="m-col">—</div><div class="metric-lbl">Colisiones</div></div>
+        <div class="metric"><div class="metric-val" id="m-eff">—</div><div class="metric-lbl">Eficiencia</div></div>
+      </div>
+
+      <div class="progress-bar"><div class="progress-fill" id="prog"></div></div>
+
+      <div class="panel">
+        <div class="log-header">
+          <span class="log-title">Registro de Eventos</span>
+          <span class="log-count" id="log-count">0 eventos</span>
+        </div>
+        <div class="log-list" id="log">
+          <div class="empty-state">
+            Presiona "Iniciar simulación" para comenzar
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Lógica para alternar el Modo Claro / Oscuro
+function initTheme() {
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  updateThemeButton(savedTheme);
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme');
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme', newTheme);
+  updateThemeButton(newTheme);
+}
+
+function updateThemeButton(theme) {
+  const btn = document.getElementById('theme-toggle');
+  const icon = document.getElementById('theme-icon');
+  if (theme === 'dark') {
+    icon.textContent = '☀️';
+    btn.innerHTML = `<span id="theme-icon">☀️</span> Modo Claro`;
+  } else {
+    icon.textContent = '🌙';
+    btn.innerHTML = `<span id="theme-icon">🌙</span> Modo Oscuro`;
+  }
+}
+
+// Inicializar el tema al cargar la página
+initTheme();
+
+// Lógica de la simulación sin estado Idle
+const nodeColors = ['#185FA5','#0F6E56','#993556'];
+const nodeDimColors = ['#B5D4F4','#9FE1CB','#F4C0D1'];
+
+document.getElementById('prob').addEventListener('input', e => {
+  document.getElementById('prob-out').textContent = (parseInt(e.target.value)/10).toFixed(1);
+});
+document.getElementById('slots').addEventListener('input', e => {
+  document.getElementById('slots-out').textContent = e.target.value;
+});
+
+function setNodeState(idx, state, tx) {
+  const card = document.getElementById('nc'+(idx+1));
+  const status = document.getElementById('ns'+(idx+1));
+  card.className = 'node-card ' + (state === 'ok' ? 'active-ok' : 'active-col');
+  status.textContent = tx ? '↑ transmitiendo' : '— silencioso';
+}
+
+function resetNodes() {
+  [0,1,2].forEach(i => {
+    document.getElementById('nc'+(i+1)).className = 'node-card';
+    document.getElementById('ns'+(i+1)).textContent = '— en espera';
+  });
+}
+
+function runSim() {
+  const p = parseInt(document.getElementById('prob').value) / 10;
+  const total = parseInt(document.getElementById('slots').value);
+  const log = document.getElementById('log');
+  log.innerHTML = '';
+
+  let ok = 0, col = 0;
+  const results = [];
+
+  for (let t = 1; t <= total; t++) {
+    let tx = [0,1,2].map(() => Math.random() < p ? 1 : 0);
+    let count = tx.reduce((a,b) => a+b, 0);
+    
+    // Si ningún nodo transmite, forzamos un escenario de colisión por reintento/demanda continua
+    if (count === 0) {
+      tx = [1, 1, 0]; // Forzar colisión activa para eliminar el estado ocioso (idle)
+      count = 2;
+    }
+    
+    results.push({ t, tx, count });
+    if (count === 1) ok++;
+    else col++;
+  }
+
+  document.getElementById('m-total').textContent = total;
+  document.getElementById('m-ok').textContent = ok;
+  document.getElementById('m-col').textContent = col;
+  document.getElementById('m-eff').textContent = Math.round(ok/total*100) + '%';
+  document.getElementById('log-count').textContent = total + ' eventos';
+
+  let i = 0;
+  const prog = document.getElementById('prog');
+  const btn = document.getElementById('btn-run');
+  btn.disabled = true;
+  btn.textContent = 'Simulando...';
+
+  function step() {
+    if (i >= results.length) {
+      resetNodes();
+      prog.style.width = '100%';
+      btn.disabled = false;
+      btn.textContent = 'Nueva simulación';
+      return;
+    }
+    const { t, tx, count } = results[i];
+    prog.style.width = Math.round((i+1)/total*100) + '%';
+
+    const state = count === 1 ? 'ok' : 'col';
+    [0,1,2].forEach(idx => setNodeState(idx, state, tx[idx]));
+
+    const row = document.createElement('div');
+    row.className = 'log-row ' + state;
+
+    const txNodes = [0,1,2].filter(j => tx[j]);
+    const dot1 = `<div class="ndot" style="background:${tx[0] ? nodeColors[0] : nodeDimColors[0]}"></div>`;
+    const dot2 = `<div class="ndot" style="background:${tx[1] ? nodeColors[1] : nodeDimColors[1]}"></div>`;
+    const dot3 = `<div class="ndot" style="background:${tx[2] ? nodeColors[2] : nodeDimColors[2]}"></div>`;
+
+    let msg = '';
+    if (count === 1) {
+      msg = `<span class="log-msg ok">transmisión exitosa del nodo N${txNodes[0]+1}</span>`;
+    } else {
+      msg = `<span class="log-msg col">colisión detectada en los nodos N${txNodes.map(j=>j+1).join(', N')}</span>`;
+    }
+
+    row.innerHTML = `<span class="log-slot">T-${String(t).padStart(2,'0')}</span>${dot1}${dot2}${dot3}${msg}`;
+    log.appendChild(row);
+    if (i % 3 === 0) log.scrollTop = log.scrollHeight;
+
+    i++;
+    setTimeout(step, 60);
+  }
+  step();
+}
+</script>
+</body>
+</html>
